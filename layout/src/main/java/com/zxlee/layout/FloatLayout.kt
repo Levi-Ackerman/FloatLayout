@@ -2,25 +2,31 @@ package com.zxlee.layout
 
 import android.content.Context
 import android.util.AttributeSet
-import android.view.View
 import android.view.ViewGroup
 
 /**
  * 根据按钮多少自动换行的ViewGroup
  */
 class FloatLayout : ViewGroup {
+    companion object {
+        private val MARGIN = 5
+    }
+
     private var maxWidth: Int = 0// 可使用的最大宽度
 
-    constructor(context: Context) : super(context) {}
-    constructor(context: Context, attrs: AttributeSet) : super(context, attrs) {}
+    constructor(context: Context) : super(context)
+    constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
     constructor(context: Context, attrs: AttributeSet,
-                defStyle: Int) : super(context, attrs, defStyle) {}
+                defStyle: Int) : super(context, attrs, defStyle)
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        maxWidth = View.MeasureSpec.getSize(widthMeasureSpec)
-        var containorHeight = 0// 容器的高度,也就是本布局的高度。初始化赋值为0.
-        val count = childCount// 获取该布局内子组件的个数
-        for (i in 0 until count) {
+        maxWidth = MeasureSpec.getSize(widthMeasureSpec)
+        var widthMode = MeasureSpec.getMode(widthMeasureSpec)
+        var containerHeight = 0// 容器的高度,也就是本布局的高度。初始化赋值为0.
+        var maxHeightInRow = 0 //记录每一行里最高的View的高度
+        var maxWidthInRow = 0 //记录最宽的一行的宽度
+        var widthRow = 0 //记录每一行目前的宽度
+        for (i in 0 until childCount) {
             val view = getChildAt(i)
             /**
              * measure(int widthMeasureSpec,int
@@ -29,11 +35,25 @@ class FloatLayout : ViewGroup {
              * MeasureSpec.EXACTLY 无论该组件设置大小是多少,都只能按照父组件限制的大小来显示<br></br>
              * MeasureSpec.UNSPECIFIED 该组件不受父组件的限制,可以设置任意大小
              */
-            view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
-            // 把每个子组件的高度相加就是该组件要显示的高度。
-            containorHeight += view.measuredHeight
+            view.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED)
+            if(view.measuredWidth > maxWidth){
+                throw RuntimeException("子View比父View还宽，出错啦！")
+            }
+            if (view.measuredWidth + widthRow > maxWidth) {
+                //超宽了，换行
+                containerHeight += maxHeightInRow
+                maxWidthInRow = Math.max(widthRow, maxWidthInRow)
+                maxHeightInRow = view.measuredHeight
+                widthRow = view.measuredWidth
+            } else {
+                //不换行，更新累计宽度和最大高度
+                maxHeightInRow = Math.max(maxHeightInRow, view.measuredHeight)
+                widthRow += view.measuredWidth
+            }
         }
-        setMeasuredDimension(maxWidth, containorHeight)// onMeasure方法的关键代码,该句设置父容器的大小。
+        containerHeight += maxHeightInRow //最后一行的高度要加上
+        maxWidthInRow = Math.max(widthRow, maxWidthInRow)
+        setMeasuredDimension(if(widthMode == MeasureSpec.AT_MOST) maxWidthInRow else maxWidth, containerHeight)// onMeasure方法的关键代码,该句设置父容器的大小。
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
@@ -65,7 +85,4 @@ class FloatLayout : ViewGroup {
         }
     }
 
-    companion object {
-        private val MARGIN = 5
-    }
 }
