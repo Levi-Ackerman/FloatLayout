@@ -1,9 +1,7 @@
 package com.zxlee.floatlayout
 
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
+import android.support.v7.app.AppCompatActivity
 import com.zxlee.layout.FloatLayout
 
 class MainActivity : AppCompatActivity() {
